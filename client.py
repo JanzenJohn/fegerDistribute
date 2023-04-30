@@ -12,7 +12,7 @@ argparser.add_argument("--sd-host", type=str, default="localhost")
 argparser.add_argument("--sd-ssl", type=bool, default=False)
 args = argparser.parse_args()
 
-websocket_url = "wss://" if args.ssl else "ws://"
+websocket_url = "wss://" if args.ws_ssl else "ws://"
 websocket_url += f"{args.host}:{args.port}"
 
 sd_url = "https://" if args.sd_ssl else "http://"
