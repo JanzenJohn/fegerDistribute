@@ -19,6 +19,9 @@ websocket_url += f"{args.host}:{args.port}"
 sd_url = "https://" if args.sd_ssl else "http://"
 sd_url += f"{args.sd_host}:{args.sd_port}"
 
+def get_shit(job_data, q):
+    x = requests.post(f"{sd_url}/sdapi/v1/txt2img", json={"prompt": job_data})
+    asyncio.get_event_loop().create_task(q.put(x))
 
 async def main():
     
@@ -28,9 +31,10 @@ async def main():
             try:
                 await websocket.send("NEED_JOB")
                 job_id, job_data = (await websocket.recv()).split("::")
-                t = threading.Thread(target=lambda :requests.post(f"{sd_url}/sdapi/v1/txt2img", json={"prompt": job_data}) )
-                while t.is_alive():
-                    await asyncio.sleep(0.5)
+                q = asyncio.Queue()
+                t = threading.Thread(target=get_shit, args=(job_data, q))
+                t.start()
+                x = await q.get()
                 if x.status_code != 200:
                     raise Exception(f"Error: {x.status_code}")
                 await websocket.send(f"DONE_JOB::{job_id}::{x.json()['images'][0]}")
