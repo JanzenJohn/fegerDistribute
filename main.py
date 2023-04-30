@@ -40,7 +40,7 @@ async def serve_jobs(websocket):
 
 async def generate_things():
     # make a websocket server
-    async with websockets.serve(serve_jobs, "localhost", 8765):
+    async with websockets.serve(serve_jobs, "0.0.0.0", 8765):
         await asyncio.Future()  # run forever
     
         
