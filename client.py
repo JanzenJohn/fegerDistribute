@@ -2,6 +2,7 @@ import websockets
 import asyncio
 import requests
 import argparse
+import threading
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("--port", type=int, default=8765)
@@ -23,10 +24,13 @@ async def main():
     
     async with websockets.connect(websocket_url) as websocket:
         while True:
+            job_id = 0
             try:
                 await websocket.send("NEED_JOB")
                 job_id, job_data = (await websocket.recv()).split("::")
-                x = requests.post(f"{sd_url}/sdapi/v1/txt2img", json={"prompt": job_data}) 
+                t = threading.Thread(target=lambda :requests.post(f"{sd_url}/sdapi/v1/txt2img", json={"prompt": job_data}) )
+                while t.is_alive():
+                    await asyncio.sleep(0.5)
                 if x.status_code != 200:
                     raise Exception(f"Error: {x.status_code}")
                 await websocket.send(f"DONE_JOB::{job_id}::{x.json()['images'][0]}")
