@@ -19,8 +19,8 @@ let retires = 0
 
 function create() {
     console.log("TRYING TO CONNECT")
-    x = new WebSocket(master_url);
-
+    const x = new WebSocket(master_url);
+    
     x.onerror = function () {
         console.log("ERROR WHILE CONNECTING")
     }
@@ -36,7 +36,24 @@ function create() {
     x.onmessage = async function (msg) {
         let [id, data] = msg.data.split("::")
         console.log({ id, data })
+        x.time = setInterval(
+            async () => {
+                const resp = await fetch(sd_url + "/sdapi/v1/progress")
+                const y = await resp.json()
+                console.log(y.progress)
+                if (x.readyState == x.OPEN){
+                    x.send("STATUS::" + y.progress)
+                    console.log("sent")
+                }
+            }
+    
+                
+            ,
+            1000
+        )
+    
         const resp = await fetch(sd_url + "/sdapi/v1/txt2img", { body: JSON.stringify({ prompt: data }), method: "POST", headers: { "Content-Type": "application/json" } })
+        clearInterval(x.time)
         console.log("got resp")
         if (resp.status == 200) {
             console.log("went good")
@@ -46,7 +63,7 @@ function create() {
             await x.send("ERROR_JOB::" + id + "::" + "idk")
         }
         await x.send("NEED_JOB")
-
+    
     }
 
     x.onopen = function () {
